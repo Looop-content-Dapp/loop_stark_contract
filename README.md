@@ -1,2 +1,3 @@
-- Loop stark onchain
-  \*\* Onchain implementation for loop music
+# Loop stark onchain
+
+**Onchain implementation for loop music.**
