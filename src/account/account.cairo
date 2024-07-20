@@ -1,18 +1,12 @@
 use starknet::{ContractAddress};
-use starknet::SyscallResultTrait;
-use starknet::account::Call;
-use loop_stark_contract::utils::{
-    MIN_TRANSACTION_VERSION, QUERY_VERSION, QUERY_OFFSET, execute_calls, is_valid_stark_signature
-};
 
 
-#[starknet::interface]
-pub trait ISRC6<TState> {
-    fn __execute__(self: @TState, calls: Array<Call>) -> Array<Span<felt252>>;
-    fn __validate__(self: @TState, calls: Array<Call>) -> felt252;
-    fn is_valid_signature(self: @TState, hash: felt252, signature: Array<felt252>) -> felt252;
-}
-
+// #[starknet::interface]
+// pub trait ISRC6<TState> {
+//     fn __execute__(self: @TState, calls: Array<Call>) -> Array<Span<felt252>>;
+//     fn __validate__(self: @TState, calls: Array<Call>) -> felt252;
+//     fn is_valid_signature(self: @TState, hash: felt252, signature: Array<felt252>) -> felt252;
+// }
 
 #[starknet::contract]
 pub mod Account {
@@ -22,11 +16,19 @@ pub mod Account {
     use core::traits::{TryInto, Into};
     use core::byte_array::ByteArrayTrait;
     use starknet::{ContractAddress, get_caller_address, get_tx_info};
+    use starknet::SyscallResultTrait;
+    use starknet::account::Call;
+    use loop_stark_contract::utils::{
+        MIN_TRANSACTION_VERSION, QUERY_VERSION, QUERY_OFFSET, execute_calls,
+        is_valid_stark_signature
+    };
+
 
     use loop_stark_contract::base::errors::Errors::{
         ZERO_ADDRESS_CALLER, ZERO_ADDRESS_OWNER, NOT_OWNER
     };
     use openzeppelin::access::ownable::OwnableComponent;
+    use openzeppelin::account::interface::ISRC6;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -40,9 +42,11 @@ pub mod Account {
     struct Storage {
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
+        #[key]
+        public_key: u256,
     }
 
-      #[event]
+    #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         #[flat]
@@ -50,11 +54,11 @@ pub mod Account {
     }
 
 
-
     #[constructor]
-    fn constructor(ref self: ContractState, owner: ContractAddress) {
+    fn constructor(ref self: ContractState, owner: ContractAddress, public_key: u256) {
         assert(!owner.is_zero(), ZERO_ADDRESS_CALLER);
         self.ownable.initializer(owner);
+        self.public_key.write(public_key)
     }
 
 
@@ -77,14 +81,21 @@ pub mod Account {
 
         fn __validate__(self: @ContractState, calls: Array<Call>) -> felt252 {
             let tx_info = get_tx_info().unbox();
-            self._is_valid_signature(tx_info.transaction_hash, tx_info.signature)
+            self.is_valid_signature(tx_info.transaction_hash, tx_info.signature)
         }
 
         fn is_valid_signature(
             self: @ContractState, hash: felt252, signature: Array<felt252>
         ) -> felt252 {
-            is_valid_stark_signature(hash, signature.span())
+            let validate_signature = is_valid_stark_signature(
+                hash, self.public_key.read().into(), signature.span()
+            );
+
+            if validate_signature {
+                starknet::VALIDATED
+            } else {
+                0
+            }
         }
     }
 }
-

@@ -30,24 +30,15 @@ fn execute_single_call(call: Call) -> Span<felt252> {
     starknet::syscalls::call_contract_syscall(to, selector, calldata).unwrap_syscall()
 }
 
-// pub fn is_valid_stark_signature(
-//     msg_hash: felt252, public_key: felt252, signature: Span<felt252>
-// ) -> bool {
-//     let valid_length = signature.len() == 2;
 
-//     if valid_length {
-//         check_ecdsa_signature(msg_hash, public_key, *signature.at(0_u32), *signature.at(1_u32))
-//     } else {
-//         false
-//     }
-// }
+pub fn is_valid_stark_signature(
+    msg_hash: felt252, public_key: felt252, signature: Span<felt252>
+) -> bool {
+    let valid_length = signature.len() == 2;
 
-fn is_valid_stark_signature(self: @ContractState, hash: felt252, signature: Span<felt252>) -> bool {
-    //let valid_length = signature.len() == 2_u32;
-
-    //if valid_length {
-    check_ecdsa_signature(hash, self.public_key.read(), *signature.at(0_u32), *signature.at(1_u32))
-// } else {
-//     false
-// }
+    if valid_length {
+        check_ecdsa_signature(msg_hash, public_key, *signature.at(0_u32), *signature.at(1_u32))
+    } else {
+        false
+    }
 }
