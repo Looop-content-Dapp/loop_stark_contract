@@ -81,14 +81,25 @@ pub mod Account {
 
         fn __validate__(self: @ContractState, calls: Array<Call>) -> felt252 {
             let tx_info = get_tx_info().unbox();
-            self.is_valid_signature(tx_info.transaction_hash, tx_info.signature)
+            self._is_valid_signature(tx_info.transaction_hash, tx_info.signature)
         }
 
         fn is_valid_signature(
             self: @ContractState, hash: felt252, signature: Array<felt252>
         ) -> felt252 {
+            self._is_valid_signature(hash, signature.span())
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn _is_valid_signature(
+            self: @ContractState, hash: felt252, signature: Span<felt252>
+        ) -> felt252 {
+            let public_key = self.public_key.read();
+
             let validate_signature = is_valid_stark_signature(
-                hash, self.public_key.read().into(), signature.span()
+                hash, public_key.try_into().unwrap(), signature
             );
 
             if validate_signature {
