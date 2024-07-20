@@ -1,13 +1,6 @@
 use starknet::{ContractAddress};
 
 
-// #[starknet::interface]
-// pub trait ISRC6<TState> {
-//     fn __execute__(self: @TState, calls: Array<Call>) -> Array<Span<felt252>>;
-//     fn __validate__(self: @TState, calls: Array<Call>) -> felt252;
-//     fn is_valid_signature(self: @TState, hash: felt252, signature: Array<felt252>) -> felt252;
-// }
-
 #[starknet::contract]
 pub mod Account {
     use core::clone::Clone;
@@ -22,7 +15,7 @@ pub mod Account {
         MIN_TRANSACTION_VERSION, QUERY_VERSION, QUERY_OFFSET, execute_calls,
         is_valid_stark_signature
     };
-
+    use loop_stark_contract::interfaces::IAccount::IAccounts;
 
     use loop_stark_contract::base::errors::Errors::{
         ZERO_ADDRESS_CALLER, ZERO_ADDRESS_OWNER, NOT_OWNER
@@ -31,6 +24,8 @@ pub mod Account {
     use openzeppelin::account::interface::ISRC6;
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+
+    const LOOP_STARK_CONTRACT_INTERFACE_ID: felt252 = '428266bfa28d0c039d0';
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -59,6 +54,19 @@ pub mod Account {
         assert(!owner.is_zero(), ZERO_ADDRESS_CALLER);
         self.ownable.initializer(owner);
         self.public_key.write(public_key)
+    }
+
+    #[abi(embed_v0)]
+    impl Account of IAccounts<ContractState> {
+        // @notice check that account supports Loop Start Contract interface
+        // @param interface_id interface to be checked against
+        fn supports_interface(self: @ContractState, interface_id: felt252) -> bool {
+            if (interface_id == LOOP_STARK_CONTRACT_INTERFACE_ID) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
 

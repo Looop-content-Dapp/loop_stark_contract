@@ -1,6 +1,7 @@
 pub mod account;
 pub mod base;
 pub mod utils;
+pub mod interfaces;
 // #[starknet::interface]
 // pub trait IHelloStarknet<TContractState> {
 //     fn increase_balance(ref self: TContractState, amount: felt252);
